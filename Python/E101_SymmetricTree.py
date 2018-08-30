@@ -43,7 +43,7 @@ class Solution(object):
         return True
 
         
-def main():
+def main(): 
     root = TreeNode(1)
     root.left = TreeNode(2)
     root.right= TreeNode(2)
