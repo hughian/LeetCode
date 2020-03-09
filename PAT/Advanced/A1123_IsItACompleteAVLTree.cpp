@@ -40,7 +40,7 @@ Node* LL(Node *root){ //LL型，向右旋
     t->right = root;
     return t;
 }
-Node* RL(Node *root){ //RL型，先向左，再向右
+Node* RL(Node *root){ //RL型，先向右，再向左
     /*
         1          1
          \          \             2

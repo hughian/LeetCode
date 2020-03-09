@@ -2,6 +2,7 @@ import math
 from typing import List
 import itertools
 import collections
+import bisect
 
 
 class KthLargest:
@@ -269,7 +270,7 @@ class Solution_54:
         return res
 
 
-class Solution_850:
+class Solution40:
     # ToDO link to 218 the skyline problem
     def rectangleArea(self, rectangles: "List[List[int]]") -> int:
         # | A ∪ B ∪ C | = | A | + | B | + | C | - | A ∩ B | - | B ∩ C | - | A ∩ C | + | A ∩ B ∩ C |
@@ -317,9 +318,9 @@ class Solution_812:
     def convex_hull(points):
 
         def ccw(p1, p2, p3):
-            # a = p3 - p1
+            # din = p3 - p1
             # b = p2 - p1
-            # a X b = |a|*|b|sin<a,b> > 0 则b在a的逆时针方向
+            # din X_train b = |din|*|b|sin<din,b> > 0 则b在a的逆时针方向
             return (p3[0] - p1[0]) * (p2[1] - p1[1]) - (p2[0] - p1[0]) * (p3[1] - p1[1]) > 0
             # return (p3.x-p1.x) * (p2.y - p1.y) - (p2.x-p1.x) * (p3.y - p1.y) > 0
 
@@ -665,20 +666,20 @@ class Solution_28:
         KMP算法的核心是求 部分匹配表(Partial Match Table)数组，PMT中的值是字符串的前缀集合与后缀集合的交集中最长元素的长度
             具体使用下列例子说明：
                           index   0   1   2   3   4   5   6   7
-                          char    a   b   a   b   a   b   c   a
+                          char    din   b   din   b   din   b   c   din
                           PMT     0   0   1   2   3   4   0   1
                           next    -1  0   0   1   2   3   4   0   1
 
             首先，PMT数组的长度和模式串的长度相同, 上述例子中，
-                  index=0，串 a     前缀集合{}， 后缀集合{}，交集为{}，故PMT[0] = 0
-                  index=1, 串 ab    前缀集合{a}， 后缀集合{b}, 交集为{}，故PMT[1] = 0
-                  index=2, 串 aba   前缀集合{a, ab}, 后缀集合{b, ba}, 交集为{a}, 故PMT[1] = 0
+                  index=0，串 din     前缀集合{}， 后缀集合{}，交集为{}，故PMT[0] = 0
+                  index=1, 串 ab    前缀集合{din}， 后缀集合{b}, 交集为{}，故PMT[1] = 0
+                  index=2, 串 aba   前缀集合{din, ab}, 后缀集合{b, ba}, 交集为{din}, 故PMT[1] = 0
                                       ······
-                  index=7, 串 abababca 前缀集合后缀集合交集为{a}, PMT[7] = 1
+                  index=7, 串 abababca 前缀集合后缀集合交集为{din}, PMT[7] = 1
 
             匹配例子：
-                       a     b    _a_   _b_   _a_   _b_   [a]   b   c   a     i = 6
-                      _a_   _b_   _a_   _b_    a     b    [c]   a             j = 6
+                       din     b    _a_   _b_   _a_   _b_   [din]   b   c   din     i = 6
+                      _a_   _b_   _a_   _b_    din     b    [c]   din             j = 6
               在i=6,j=6时首先出现失配，而此时[i-j, i-1] 与[0, j-1]部分是已经匹配过完全相同的，而前面部分模式串中有相同的
               前缀和后缀abab,长度为PMT[j-1] = 4, 因此这一部分不需要再匹配，直接移动到PMT[j-1]与i匹配即可（i不需要移动）
 
@@ -737,7 +738,7 @@ class Solution_28:
         MOD = int(1e9 + 7)
         p = 113
         h = p ** (m - 1) % MOD
-        code = lambda c: ord(c) - ord('a')
+        code = lambda c: ord(c) - ord('din')
 
         target = cur_val = 0
         for i in range(m):
@@ -754,6 +755,7 @@ class Solution_28:
                 if check(pattern, text[i - m + 1:i + 1]):
                     return i - m + 1
         return -1
+
 
 class Solution_459:
     def _repeatedSubstringPattern(self, s: str) -> bool:
@@ -803,7 +805,7 @@ class Solution_459:
 
 
 class Solution_233:
-    # link to 338, 不太一样
+    # link to 338 数 bit, 不太一样
     def countDigitOne(self, n: int) -> int:
         if n <= 0:
             return 0
@@ -847,6 +849,29 @@ class Solution_233:
                 ans += (left + 1) * e
             e *= 10
         return ans
+
+    def countDigitOne(self, n: int) -> int:
+        def countOne(s):
+            if not s:
+                return 0
+            left_most_digit = int(s[0])  # 最高位
+            n = len(s)  # 位数
+
+            if n==1 and left_most_digit >= 0:
+                return 1 if left_most_digit > 0 else 0
+
+            ans = 0
+            if left_most_digit > 1:  # 最高位 > 1 则出现 10^(n-1) 方次
+                ans += pow(10, n-1)
+            elif left_most_digit == 1:  # 最高位 ==1 出现右边的数字 + 1 次
+                ans += int(s[1:]) + 1   # right + cur 的一个 1
+
+            ans += left_most_digit * (n - 1) * pow(10, n-2)  # 剩余 n-1 位中出现 1 的次数
+                                                             # left_most_digit * C(n-1, 1) * 10^(n-2)
+            ans += countOne(s[1:])  # 递归
+            return ans
+
+        return countOne(str(n))
 
 
 class Solution_149:
@@ -1002,9 +1027,95 @@ class Solution_65:
         s = s.strip(' ')
         return isScience(s)
 
+
 #######################################################################################################################
+# 单调栈
 # 使用stack 保持一个升序/降序的序列来解题，每一个元素都入栈一次。
-# 第一道题同时还写了线段树解法。
+# 第 84 题同时还写了线段树解法。
+# 单调栈，用来维护一个单调的序列（如升序），一般的范式如下：
+# >>> stack = []
+# >>> for x in nums:
+# >>>     while stack and stack[-1] > x:
+# >>>         stack.pop()
+# >>>     stack.append(x)
+# 这样栈中存储的就是一个单调序列
+class Solution_907:
+    def sumSubarrayMins(self, A: List[int]) -> int:
+        # 要找出 A 的所有子集的最小元素的和，暴力是 O(2^n)
+        # 关键在于计算 A 中每个元素至少在多少个子集中为最小值，设 A[i] 在 f(i) 个子集中为最小元素
+        # 则有 ans = \sum_i (A[i] * f(i)), 于是问题转变为求 f(i)
+        #
+        # 单调栈可以用来求前一大/小元素或者是后一大/小元素，我们可以利用这个性质来求 f(i)
+        # 先看一个例子，[2, 8, 7, 3, 4, 6, 9, 1]
+        #               ^        ^           ^
+        # 显然，元素 3 的前一小元素是 2，后一小元素是 1
+        # 我们用 left[i] 记录元素 A[i] 到它的前一小元素的距离，这里 3 的 index=3, left[3] = 3
+        # 我们用 right[i] 记录元素 A[i] 到它的后一小元素的距离，这里 3 的 index=3, right[3] = 4
+        # 于是，包含元素 A[4] = 3 的子集有。
+        #           3           # 只有 3
+        #        7, 3           # 只有左边
+        #     8, 7, 3
+        #           3, 4        # 只有右边
+        #           3, 4, 6
+        #           3, 4, 6, 9
+        #        7, 3, 4        # 左右都有
+        #        7, 3, 4, 6
+        #        7, 3, 4, 6, 9
+        #     8, 7, 3, 4
+        #     8, 7, 3, 4, 6
+        #     8, 7, 3, 4, 6, 9
+        # 共 12 个，即 f(4) = 12, 对应:
+        #   f(4) = 1 + (left[4] - 1) + (right[4] - 1) + (left[4] - 1) * (right[4] - 1)
+        #        = left[4] * right[4]
+        # 即有 f(i) = left[i] * right[i]
+        # 而使用单调栈可以很容易的求出 left 和 right 数组。
+
+        n = len(A)
+        # 初始化
+        left, right = [i + 1 for i in range(n)], [n - i for i in range(n)]
+        # 求到前一个小的元素的距离
+        stack = []
+        for i, x in enumerate(A):
+            while stack and A[stack[-1]] > x:
+                stack.pop()
+            left[i] = i - stack[-1] if stack else i + 1
+            stack.append(i)
+        # 求到后一个小的元素的距离
+        # 注意求前一个小的元素是严格的小于，而求后一个小于是小于等于，
+        # 体现在上下两段代码中就是两端代码中就是对 left 和 right 赋值的过程，
+        # 一个是在判断循环内，一个在判断循环外，而比较用到都是大于号（A[stack[-1]] > x）
+        stack = []
+        for i, x in enumerate(A):
+            while stack and A[stack[-1]] > x:
+                t = stack.pop()
+                right[t] = i - t
+            stack.append(i)
+
+        ans = 0
+        MOD = int(1e9 + 7)
+        for x, l, r in zip(A, left, right):
+            ans = (ans + x * l * r) % MOD
+        return ans
+
+    def sumSubarrayMins(self, A: List[int]) -> int:
+        # 注意上面代码中，求 left 和 right 的逻辑是一样的，仅仅是赋值的时候不同，
+        # 所以可以将其合并到一个循环中。
+        # 1). right 的赋值是在 stack 的循环内进行的, 每次对 pop 出来下标对应的元素计算 right 所以不用改动。
+        # 2). left 的赋值在上面的解法中是按顺序进行，我们如果对每次 pop 出来下标对应元素计算 left 应该怎么算呢？
+        #     很简单，栈式升序有序的，弹出后下一个就是栈顶就是弹出元素的前一小，当然如果栈为空了就是弹出元素的下标加一
+        # 最后，既然求 left, right 可以在 one-pass 做完，那么求最后结果也可以合并进来，最后的代码如下
+        ans = 0
+        MOD = int(1e9 + 7)
+        n = len(A)
+        stack = []
+        for i in range(n + 1):
+            while stack and A[stack[-1]] > (A[i] if i < n else 0):
+                t = stack.pop()
+                k = stack[-1] if stack else -1
+                ans += A[t] * (i - t) * (t - k)  # right[t] = i - t, left[t] = t - k
+            stack.append(i)
+        return ans % MOD
+
 
 class SegmentTree:
     def __init__(self, ls):
@@ -1067,21 +1178,84 @@ class Solution_84:
 
         return maxArea(0, len(st.ls) - 1)
 
-    def _largestRectangleArea(self, heights: 'List[int]') -> int:
+    def largestRectangleArea(self, heights: List[int]) -> int:
         stack = []
-        m = 0
-        for i in range(len(heights)):
-            print(stack)
-            while stack and heights[stack[-1]] >= heights[i]:
-                area = heights[stack.pop()] * (i if len(stack) == 0 else i - 1 - stack[-1])
-                m = max(m, area)
+        n = len(heights)
+        ans = 0
+        for i in range(n):  # 注意循环次数
+            while stack and heights[stack[-1]] > heights[i]:
+                t = stack.pop()
+                k = stack[-1] if stack else -1
+                area = heights[t] * (i - 1 - k)
+                ans = max(ans, area)
             stack.append(i)
 
         while stack:
-            area = heights[stack.pop()] * (len(heights) if len(stack) == 0 else len(heights) - 1 - stack[-1])
-            m = max(m, area)
+            t = stack.pop()
+            area = heights[t] * (n - 1 - stack[-1] if stack else n)
+            ans = max(ans, area)
 
-        return m
+        return ans
+
+    def largestRectangleArea(self, heights: List[int]) -> int:
+        # 这个写法和 907 题的 one-pass 解法几乎是一样的
+        # 找出每个数的前一小元素与后一小元素，然后面积是左右之间的距离乘于当前块的高度
+        # 下面 ans = max(ans, heights[t] * ((i - t) + (t - k) - 1)) 一句中没有化简求和式是为了和上面保持一致
+        stack = []
+        ans = 0
+        n = len(heights)
+        heights.append(0)
+        for i in range(n + 1):  # 注意循环次数多了 1 次
+            # 循环多了 i==n 的情况，同时判断 height[stack[-1]] > 0 (heights 全为非负数)
+            # 是将上面解法中 最后的判断 stack 内的合并到了一起。
+            while stack and heights[stack[-1]] > heights[i]:
+                t = stack.pop()
+                k = stack[-1] if stack else -1
+                ans = max(ans, heights[t] * ((i - t) + (t - k) - 1))
+            stack.append(i)
+        return ans
+
+
+class Solution_85:
+    # stack, dp
+    def maximalRectangle(self, matrix: List[List[str]]) -> int:
+        # 这个题目可以变形为 84. Largest Rectangle in Histogram 问题
+        # 我们列中的 '1' 看作一个单位的小方格，然后维护一个 heights 数组，
+        # 这个数组表示扫描到当前位置时累积的每一列的高度，因为要求的是矩形
+        # 是一个连续区域，于是我们在遇到 '0' 时 reset 当前列的 heights 值。
+        # 举例, 一个 matrix 如下：
+        #     [["1", "0", "1", "0", "0"],
+        #      ["1", "0", "1", "1", "1"],
+        #      ["0", "1", "1", "1", "1"],
+        #      ["1", "0", "0", "1", "0"]]
+        # 扫描第一行后 heights = [1, 0, 1, 0, 0]
+        # 扫描第二行后 heights = [2, 0, 2, 1, 1]
+        # 扫描第三行后 heights = [0, 1, 3, 2, 2]  注意第 0 列的高度被重置为 0
+        # 扫描第四行后 heights = [1, 0, 0, 3, 0]  注意第 1, 2, 4 列高度被重置为 0
+        #
+        # 每扫描一个元素，我们都更新一次 heights(上面只列出来扫描完一行后的)，更新 heights 的同时
+        # 我们可以解决 Largest Rectangle in Histogram 问题。最后得到的就是问题的解。
+
+        m = len(matrix)
+        n = len(matrix[0]) if m else 0
+        if m == 0 or n == 0:
+            return 0
+
+        res = 0
+        heights = [0] * (n + 1)
+        for i in range(m):
+            stack = []
+            for j in range(n + 1):
+                # 更新 heights
+                if j < n:
+                    heights[j] = heights[j] + 1 if matrix[i][j] == '1' else 0
+                # 计算 面积
+                while stack and heights[stack[-1]] >= heights[j]:
+                    t = stack.pop()
+                    k = stack[-1] if stack else -1
+                    res = max(res, heights[t] * (j - k - 1))
+                stack.append(j)
+        return res
 
 
 class Solution_739:
@@ -1143,8 +1317,283 @@ class Solution_496:
             stack.append(x)
 
         return [d.get(x, -1) for x in findNums]
+
+
+class Solution_503:
+    # stack， 维护降序序列
+    def nextGreaterElements(self, nums: List[int]) -> List[int]:
+        # 循环数组，把数组自身拼接以下就好了
+        res = [-1] * 2 * len(nums)
+        stack = []
+        tmp = nums + nums
+        for i, x in enumerate(tmp):
+            while stack and tmp[stack[-1]] < x:
+                t = stack.pop()
+                res[t] = x
+            stack.append(i)
+        return res[:len(nums)]
+
+    def nextGreaterElements(self, nums: List[int]) -> List[int]:
+        # 做两遍循环也是一样的
+        res = [-1] * len(nums)
+        stack = []
+        for i in range(2):
+            for i, x in enumerate(nums):
+                while stack and nums[stack[-1]] < x:
+                    t = stack.pop()
+                    res[t] = x
+                stack.append(i)
+        return res
+
+
+class Solution_402:
+    def removeKdigits(self, num: str, k: int) -> str:
+        stack = []
+        cnt = 0
+        for i, c in enumerate(num):
+            while stack and ord(stack[-1]) > ord(c) and cnt < k:
+                stack.pop()
+                cnt += 1
+            stack.append(c)
+        while cnt < k and stack:
+            stack.pop()
+            cnt += 1
+        res = ''.join(stack).lstrip('0')
+        return res if res else '0'
+
+
+class Solution_316:
+    def removeDuplicateLetters(self, s: str) -> str:
+        # 使用栈维护一个字符的升序序列(尽可能的升序，因为要保持原本的相对顺序)
+        stack = []
+        cnt = {}
+        seen = {}
+        for c in s:
+            cnt[c] = cnt.get(c, 0) + 1
+            seen[c] = False
+        for c in s:
+            cnt[c] -= 1  # cnt 表示后面还剩多少个每个字符
+            if seen[c]:  # 栈里面已经有 c 了，则 c 一定处在一个相对升序序列中
+                continue
+            while stack and ord(stack[-1]) > ord(c) and cnt[stack[-1]] > 0:
+                t = stack.pop()
+                seen[t] = False
+            stack.append(c)
+            seen[c] = True
+        return ''.join(stack)
+
+    @staticmethod
+    def debug():
+        s = Solution_316()
+        assert s.removeDuplicateLetters("abacb") == "abc"
+        assert s.removeDuplicateLetters("cbacdcbc") == "acdb"
+        assert s.removeDuplicateLetters("bcabc") == "abc"
+
+
+class Solution_321:
+    def maxNumber(self, nums1: List[int], nums2: List[int], k: int) -> List[int]:
+
+        def pre(nums, k):
+            drop = len(nums) - k  # number of num need to drop
+            stack = []
+            for x in nums:
+                # 维护一个降序序列
+                while stack and drop and stack[-1] < x:
+                    stack.pop()
+                    drop -= 1
+                stack.append(x)
+            return stack[:k]
+
+        def merge(a, b):
+            # din, b 都是 list max(din, b).pop(0) 从比较大的比较结果中 pop 头一个元素
+            return [max(a, b).pop(0) for _ in a + b]
+
+        m, n = len(nums1), len(nums2)
+        ans = []
+        # 枚举所有的情况
+        for i in range(k + 1):
+            if i <= m and k - i <= n:
+                tmp = merge(pre(nums1, i), pre(nums2, k - i))
+                ans = max(ans, tmp)
+        return ans
+
+
+class Solution_456:
+    # stack, 维护有序序列，区间查找
+    def find132pattern(self, nums: List[int]) -> bool:
+        # TLE, O(n^3)
+        for i in range(len(nums)):
+            for j in range(i + 1, len(nums)):
+                for k in range(j + 1, len(nums)):
+                    if nums[i] < nums[k] < nums[j]:
+                        return True
+        return False
+
+    def find132pattern(self, nums: List[int]) -> bool:
+        # TLE, O(n^2)
+        min_i = float('inf')
+        for j in range(len(nums) - 1):
+            min_i = min(min_i, nums[j])  # min_i 记录从 i ~ j 中最小的
+            # 我们要找出一个 num[k] 落入到区间 (min_i, nums[j]) 中
+            for k in range(j + 1, len(nums)):
+                if min_i < nums[k] < nums[j]:
+                    return True
+        return False
+
+    def find132pattern(self, nums: List[int]) -> bool:
+        # TLE, O(n^2), 使用一个数据维护 (nums[i], nums[j]) 区间
+        idx = 0
+        intervals = []
+        for i in range(len(nums)):
+            if nums[i] <= nums[i - 1]:
+                if idx < i - 1:
+                    intervals.append((nums[idx], nums[i - 1]))
+                idx = i
+            for ai, aj in intervals:
+                if ai < nums[i] < aj:
+                    return True
+        return False
+
+    def find132pattern(self, nums: List[int]) -> bool:
+        # O(n) 使用 stack 维护有序序列
+        if len(nums) < 3:
+            return False
+
+        stack = []
+        # mins 存储从 0 ~ i 区间的最小值
+        mins = [0] * len(nums)
+        mins[0] = nums[0]
+        for i in range(1, len(nums)):
+            mins[i] = min(mins[i - 1], nums[i])
+
+        for j in range(len(nums) - 1, -1, -1):  # 注意这里是反向循环的
+            if nums[j] > mins[j]:
+                # 使用 stack 维护了一个严格的降序序列
+                while stack and stack[-1] <= mins[j]:
+                    stack.pop()
+                # 如果 stack 中还有元素的话满足 stack[-1] > mins[j]
+                if stack and stack[-1] < nums[j]:
+                    return True
+                stack.append(nums[j])
+        return False
+
+    def find132pattern(self, nums: List[int]) -> bool:
+        # O(n) 把数组本身当作 stack 维护有序序列
+        if len(nums) < 3:
+            return False
+
+        # mins 存储从 0 ~ i 区间的最小值
+        mins = [0] * len(nums)
+        mins[0] = nums[0]
+        for i in range(1, len(nums)):
+            mins[i] = min(mins[i - 1], nums[i])
+        k = len(nums) - 1  # stack 的指针
+        for j in range(len(nums) - 1, -1, -1):  # 注意这里是反向循环的
+            if nums[j] > mins[j]:
+                # 使用 stack 维护了一个严格的降序序列
+                while k < len(nums) - 1 and nums[k + 1] <= mins[j]:
+                    k += 1  # 出栈
+                # 如果 stack 中还有元素的话满足 nums[k] > mins[j]
+                if k < len(nums) - 1 and nums[k + 1] < nums[j]:
+                    return True
+
+                nums[k] = nums[j]  # 入栈（把nums本省当作栈，k-=1 以及 这一句赋值时入栈过程）
+                k -= 1
+        return False
+
+
+class Solution_239:
+    # 单调队列
+    def maxSlidingWindow(self, nums: List[int], k: int) -> List[int]:
+        # 暴力解 O(k*n)
+        if len(nums) == 0:
+            return []
+
+        i = 0
+        res = []
+
+        while i + k <= len(nums):
+            res.append(max(nums[i:i + k]))
+            i += 1
+        return res
+
+    def maxSlidingWindow(self, nums: List[int], k: int) -> List[int]:
+        # 对暴力解进行优化， 滑动
+        if len(nums) == 0:
+            return []
+        res = [max(nums[:k])]
+        i = 1
+        while i + k <= len(nums):
+            prev = res[-1]
+            if prev < nums[i + k - 1]:
+                res.append(nums[i + k - 1])
+            elif prev > nums[i - 1]:
+                res.append(prev)
+            else:
+                res.append(max(nums[i:i + k]))
+            i += 1
+        return res
+
+    def maxSlidingWindow(self, nums: List[int], k: int) -> List[int]:
+        if len(nums) == 0:
+            return []
+        res = []
+        que = collections.deque()
+        for i, x in enumerate(nums):
+            while que and nums[que[-1]] < x:
+                que.pop()
+            que.append(i)
+
+            if que[0] == i - k:
+                que.popleft()
+
+            if i >= k - 1:
+                res.append(nums[que[0]])
+        return res
+
+
+class StockSpanner:
+
+    def __init__(self):
+        self.stack = []
+        self.idx = 1
+
+    def next(self, price: int) -> int:
+
+        while self.stack and self.stack[-1][1] <= price:
+            self.stack.pop()
+        if self.stack:
+            r = self.idx - self.stack[-1][0]
+        else:
+            r = self.idx
+        self.stack.append([self.idx, price])
+        self.idx += 1
+        return r
+
+
 #######################################################################################################################
 
+class Solution_769:
+    def maxChunksToSorted(self, arr: List[int]) -> int:
+        # 划分点 左边的元素都大于/小于，右边的元素都小于/大于划分点
+        # 这个类似于快排的划分
+        # 然后这个题目就类似于 42 题，积水面积, 不过是要大于左边最大，小于右边最小，加一
+        maxs = [-1]
+        mins = [float('inf')]
+        for x in arr:
+            maxs.append(max(maxs[-1], x))
+
+        for x in arr[::-1]:
+            mins.append(min(mins[-1], x))
+        maxs.append(float('inf'))
+        mins.append(float('inf'))
+        mins.reverse()
+        ans = 1
+        for i, x in enumerate(arr[1:]):
+            # print(maxs[i], x, mins[i+2])
+            if maxs[i+1] < x < mins[i+3]:
+                ans += 1
+        return ans
 
 class Solution_212:
     def findWords(self, board, words):
@@ -1318,7 +1767,7 @@ class Solution_796:
             hs = 0
             power = 1
             for x in string:
-                code = ord(x) - 96  # since ord('a') = 97
+                code = ord(x) - 96  # since ord('din') = 97
                 hs = (hs + power * code) % MOD
                 power = power * P % MOD
             return hs, power
@@ -1444,7 +1893,6 @@ class Solution_5233:
         return dp[len(tasks) - 1][len(tasks) - 1]
 
 
-
 #######################################################################################################################
 # 下面几道题是二分的代表
 # NOTE 二分法的应用关键在于，可行解的结构是单调的，且在一可确定的区间内。
@@ -1462,7 +1910,7 @@ class Solution_1201:
         i = 0
         while i < n:
             t = min(a * ia, b * ib, c * ic)
-            # print(t, ia, ib, ic)
+            # print(t, ia, ib, item_to_cate)
 
             if t in tojump and tojump[t] == 1:
                 tojump[t] = 0
@@ -1479,10 +1927,7 @@ class Solution_1201:
 
     def nthUglyNumber(self, n: int, a: int, b: int, c: int) -> int:
         # TODO 用到了最小公倍数（LCM)加上二分查找。
-        def gcd(a, b):
-            while b > 0:
-                a, b = b, a % b
-            return a
+        from math import gcd
 
         def LCM(a, b, c=1):
             if c == 1:
@@ -1492,7 +1937,7 @@ class Solution_1201:
             return (lcm_ab * lcm_bc) // gcd(lcm_ab, lcm_bc)
 
         def f(k):
-            """f(k) return the number of numbers that can be divide by a/b/c"""
+            """f(k) return the number of numbers that can be divide by din/b/c"""
             return k // a + k // b + k // c - k // LCM(a, b) - k // LCM(b, c) - k // LCM(a, c) + k // LCM(a, b, c=c)
 
         left = min(a, b, c)
@@ -1529,6 +1974,31 @@ class Solution_1201:
                 high = mid
         return low
 
+
+class Solution_878:
+    def nthMagicalNumber(self, N: int, A: int, B: int) -> int:
+        # 这题和 1201. n-th ugly number III 其实是一样的，大致是那题的简化版
+
+        from math import gcd
+        MOD = int(1e9 + 7)
+        lcm = A // gcd(A, B) * B  # 最小公倍数
+
+        # 容斥原理
+        def f(k):
+            return k // A + k // B - k // lcm
+
+        lo, hi = min(A, B), N * max(A, B)
+        k = 0
+
+        while lo < hi:
+            mid = lo + (hi - lo) // 2
+            t = f(mid)
+            if t < N:
+                lo = mid + 1
+            else:
+                hi = mid
+
+        return lo % MOD
 
 class Solution_410:
     def _splitArray(self, nums: List[int], m: int) -> int:
@@ -1679,9 +2149,9 @@ class Solution_887:
     def superEggDrop(self, K: int, N: int) -> int:
         # DP(memo+search) + binary search
         # 状态(K, N)
-        # 如果我们从X层丢鸡蛋，碎了状态变成(K-1, X-1), 没碎状态变成(K, N-X)
+        # 如果我们从X层丢鸡蛋，碎了状态变成(K-1, X_train-1), 没碎状态变成(K, N-X_train)
         # 定义dp(k, n) = 在状态(k, n)下解这个问题需要的最多的步数，则
-        #   dp(k, n) = min_{1<=X<=N} (max(dp(k-1, x-1), dp(k, n-x)))
+        #   dp(k, n) = min_{1<=X_train<=N} (max(dp(k-1, x-1), dp(k, n-x)))
         # 注意到 t1 = dp(k-1, x-1), 随x单调增
         #        t2 = dp(k, n-x), 随x单调减
         # 于是max(t1,t2)是二者的上半部分, 因此查找x可以二分进行。
@@ -1719,7 +2189,7 @@ class Solution_887:
         return foo(K, N)
 
     def superEggDrop(self, K: int, N: int) -> int:
-        # 使用上述定义  dp(k, n) = min_{1<=X<=N} (max(dp(k-1, x-1), dp(k, n-x)))
+        # 使用上述定义  dp(k, n) = min_{1<=X_train<=N} (max(dp(k-1, x-1), dp(k, n-x)))
         #   t1 = dp(k-1, x-1)，注意到t1随x单调增，但是与 n 无关
         #   t2 = t2 = dp(k, n-x), 随x单调减, 但随 n 单调增
         # 于是可以得到 dp(k, n) 随 n 的增加而增加。https://LeetCode.com/articles/super-egg-drop/ 这里有图
@@ -1815,7 +2285,7 @@ class Solution_274:
 class Solution_12:
     def intToRoman(self, num: int) -> str:
         mp = {1: 'I', 4: 'IV', 5: 'V', 9: 'IX',
-              10: 'X', 40: 'XL', 50: 'L', 90: 'XC',
+              10: 'X_train', 40: 'XL', 50: 'L', 90: 'XC',
               100: 'C', 400: 'CD', 500: 'D', 900: 'CM',
               1000: 'M'}
         res = []
@@ -1906,12 +2376,12 @@ class Solution_40:
 
 #######################################################################################################################
 # 一维度区间问题
-# 两个一维区间(a, b), (c, d)相交的情况是
-#    a----c---b----d
-#    c----a---d----b
-#    a----c----d---b
-#    c----a----b---d
-# 于是相交的条件是 a <= d and c <= b (是否取等号视具体情况)
+# 两个一维区间(din, b), (c, d)相交的情况是
+#    din----c---b----d
+#    c----din---d----b
+#    din----c----d---b
+#    c----din----b---d
+# 于是相交的条件是 din <= d and c <= b (是否取等号视具体情况)
 #
 # 一维区间的交 [1, 3] ∩ [2, 4] = [2, 3]
 # 相交的两个一维区间的并 [1, 3] U [2, 4] = [1, 4]
@@ -1937,6 +2407,23 @@ class Solution_56:
                 i += 1
         return inters
 
+    def merge(self, intervals: List[List[int]]) -> List[List[int]]:
+        if not intervals: return []
+        inter = sorted(intervals)
+        res = []
+        # print(inter)
+        x, y = inter[0]
+        for a, b in inter[1:]:
+            if x <= b and a <= y:
+                x = min(x, a)
+                y = max(y, b)
+            else:
+                res.append([x, y])
+                x, y = a, b
+        if not res or res[-1] != [x, y]:
+            res.append([x, y])
+        return res
+
     def merge(self, intervals):
         inters = sorted(intervals)
         # since we have sorted, we only need last interval's end < current to ensure no overlap
@@ -1948,75 +2435,64 @@ class Solution_56:
                 merged[-1][1] = max(merged[-1][1], inter[1])
         return merged
 
+    def merge(self, intervals):
+        # 扫描线算法
+        # [[1,3],[2,6],[8,10],[15,18]]
+        # 1( 2( 3) 6) 8( 10) 15( 18)
+        # 只看括号就是 (()) () ()
+        Left, Right = 0, 1  # 先处理 Left
+
+        events = []
+        for inter in intervals:
+            events.append((inter[0], Left))
+            events.append((inter[1], Right))
+        events.sort()
+
+        res = []
+        balance = 0
+        prev = -1
+        for x, T in events:
+            if balance == 0:  # balance 表示左右()是否平衡了, 类似括号匹配了
+                prev = x
+            balance += (1 if T == Left else -1)
+            if balance == 0:  # 处理之后平衡了就新加一个结果
+                res.append([prev, x])
+        return res
+
 
 class Solution_57:
     def insert(self, intervals: List[List[int]], newInterval: List[int]) -> List[List[int]]:
-        def intersect(in1, in2):
-            a, b = in1
-            c, d = in2
-            return a <= d and c <= b
+        # 二分查找，插入，然后 使用56 题中的 merge
+        bisect.insort(intervals, newInterval)
+        res = []
+        for inter in intervals:
+            if not res or res[-1][1] < inter[0]:
+                res.append(inter)
+            else:
+                res[-1][1] = max(res[-1][1], inter[1])
+        return res
 
-        i = 0
-        inserted = False
-        inter = False
-        while i < len(intervals):
-            if intervals[i][0] > newInterval[0] and not intersect(intervals[i], newInterval):
-                intervals.insert(i, newInterval)
-                inserted = True
-                break
-            if intersect(intervals[i], newInterval):
-                (a, b), (c, d) = intervals[i], newInterval
-                intervals[i] = [min(a, c), max(b, d)]
-                inter = True
-                break
-            i += 1
-        if inter:
-            while i < len(intervals) - 1:
-                if intersect(intervals[i], intervals[i + 1]):
-                    (a, b), (c, d) = intervals[i], intervals[i + 1]
-                    intervals[i] = [min(a, c), max(b, d)]
-                    intervals.pop(i + 1)
-                else:
-                    i += 1
-        elif not inserted:
-            intervals.append(newInterval)
 
-        return intervals
+class Solution_759:
+    def merge(self, intervals: List[List[int]]) -> List[List[int]]:
+        Left, Right = 0, 1
+        events = []
+        for a, b in intervals:
+            events.append([a, Left])
+            events.append([b, Right])
 
-    def _insert(self, intervals: List[List[int]], newInterval: List[int]) -> List[List[int]]:
-        def intersect(in1, in2):
-            a, b = in1
-            c, d = in2
-            return a <= d and c <= b
+        events.sort()
 
-        i = 0
-        inter = False
-        while i < len(intervals):
-            if intersect(intervals[i], newInterval):
-                (a, b), (c, d) = intervals[i], newInterval
-                intervals[i] = [min(a, c), max(b, d)]
-                inter = True
-                break
-            i += 1
-        if inter:
-            while i < len(intervals) - 1:
-                if intersect(intervals[i], intervals[i + 1]):
-                    (a, b), (c, d) = intervals[i], intervals[i + 1]
-                    intervals[i] = [min(a, c), max(b, d)]
-                    intervals.pop(i + 1)
-                else:
-                    i += 1
-        else:
-            inserted = False
-            for i in range(len(intervals)):
-                if intervals[i][0] > newInterval[0]:
-                    intervals.insert(i, newInterval)
-                    inserted = True
-                    break
-            if not inserted:
-                intervals.append(newInterval)
-
-        return intervals
+        res = []
+        balance = 0
+        prev = 0
+        for x, T in events:
+            if balance == 0:
+                res.append([prev, x])
+            balance += (1 if T == Left else -1)
+            if balance == 0:
+                prev = x
+        return res[1:]
 
 
 class Solution_495:
@@ -2409,8 +2885,8 @@ class Solution_96:
 #   x ^ (x & (x-1)) 返回x最右边一位为1的数
 #   x & (-x) 返回x最右边一位1的数
 #   r & ~(r - 1) 求r的最右边一位1
-#   a^=b; b^=a; a^=b  交换a,b两个值
-#   (a ^ (a>>31)) - (a>>31) 对a取绝对值，python不可以这么干
+#   din^=b; b^=din; din^=b  交换a,b两个值
+#   (din ^ (din>>31)) - (din>>31) 对a取绝对值，python不可以这么干
 
 class Solution_371:
     def getSum(self, a, b):
@@ -2488,7 +2964,7 @@ class Solution_260:
         r = 0
         for n in nums:
             r ^= n
-        # 上述循环结束后 r = a^b (a, b是要找的两个只出现一次的数)，
+        # 上述循环结束后 r = din^b (din, b是要找的两个只出现一次的数)，
         # 其最低位的1一定是由于a,b对应位置不同才出现的 0^1 = 1^0 = 1,
         # 于是通过判断nums中数的这一位为0还是为1可以将nums分为两组，
         # 一组是包含a,和其他出现两次的数；另一组是包含b和剩下出现两次的数。
@@ -2569,7 +3045,7 @@ class Solution_1177:
         for i, c in enumerate(s):
             if i > 0:
                 count[i] |= count[i - 1]
-            idx = ord(c) - ord('a')
+            idx = ord(c) - ord('din')
             count[i] ^= (1 << idx)
 
         ans = []
@@ -2669,19 +3145,54 @@ class Solution_11:
 
 class Solution_42:
     def trap(self, height: List[int]) -> int:
+        # 对每个 bin 利用左右高点的方式来算
         # 先存一遍右边的最高点
         right = [0] * (len(height) + 1)
         for i in range(len(height) - 1, -1, -1):
             right[i] = max(right[i + 1], height[i])
         right = right[1:]
 
-        lm = 0
+        left_m = 0
         res = 0
         for i in range(len(height)):
-            t = min(lm, right[i]) - height[i]
+            t = min(left_m, right[i]) - height[i]
             if t > 0:
                 res += t
-            lm = max(lm, height[i])
+            # 左边的最高点
+            left_m = max(left_m, height[i])
+        return res
+
+    def trap(self, height: List[int]) -> int:
+        # two pointers, O(n) time, O(1) space
+        # 不使用额外的数组空间维护左/右侧的最大值，而是使用双指针法来做
+        lo, hi = 0, len(height) - 1
+        res = 0
+        lm = rm = 0  # 左侧最大值和右侧的最大值
+        while lo < hi:
+            # height[lo] <= height[hi] 表示右边当前值高于或等于左边，这样我们如果左边 lm > height[lo] 的话就可能积水
+            if height[lo] <= height[hi]:
+                lm = max(lm, height[lo])
+                res += lm - height[lo]  # lm - height[lo] >= 0
+                lo += 1
+            # 同理，height[lo] > height[hi] 表示左边当前值高于右边，这样我们如果右边 rm > height[hi] 的话也会积水
+            else:
+                rm = max(rm, height[hi])
+                res += rm - height[hi]
+                hi -= 1
+        return res
+
+    def trap(self, height: List[int]) -> int:
+        stack = []
+        res = 0
+
+        for i, h in enumerate(height):
+            # 使用 stack 维护降序序列，这个对于一块连着的积水时一层一层算的。
+            while stack and height[stack[-1]] < h:
+                t = stack.pop()
+                if stack:
+                    min_h = min(height[stack[-1]], h)
+                    res += (min_h - height[t]) * (i - stack[-1] - 1)
+            stack.append(i)
         return res
 
 
@@ -2940,7 +3451,7 @@ class Solution_130:
                     if b:
                         to_use.extend(to)
         for x, y in to_use:
-            board[x][y] = 'X'
+            board[x][y] = 'X_train'
 
         for ls in board:
             print(ls)
@@ -2999,5 +3510,147 @@ class Solution_122:
                 profit += t
         return profit
 
+class Solution_335:
+    def isSelfCrossing(self, x: List[int]) -> bool:
+        # 3 case
 
+        if len(x) < 4:
+            return False
+        for i in range(3, len(x)):
+            if x[i] >= x[i - 2] and x[i - 1] <= x[i - 3]:
+                return True
+            if i >= 4 and x[i - 1] == x[i - 3] and x[i - 2] <= x[i] + x[i - 4]:
+                return True
+            if i >= 5 and x[i-3] >= x[i - 1] >= x[i - 3] - x[i - 5] and x[i] >= x[i - 2] - x[i - 4] and x[i-4] <= x[i-2]:
+                return True
+        return False
+
+
+class Solution_30:
+    def findSubstring(self, s: str, words: List[str]) -> List[int]:
+        #
+        if not s or not words: # 边界情况，s / word 为空
+            return []
+
+        m = len(words[0])
+        n = len(words)
+        words = sorted(words)
+        ws = set(words)
+        t = m * n
+        res = []
+        for i in range(len(s)-t+1):
+            if s[i:i+m] in ws:
+                tmp = [s[j:j+m] for j in range(i, i+t, m)]
+                if sorted(tmp) == words:
+                    res.append(i)
+        return res
+
+class Solution_76:
+    def minWindow(self, s: str, t: str) -> str:
+
+        def counter(cq, ct):
+            for k, v in ct.items():
+                if k not in cq or cq[k] < v:
+                    return False
+            return True
+
+        counter_t = collections.Counter(t)
+        counter_q = {}
+
+        if len(s) < len(t):
+            return ""
+
+        que = collections.deque()
+        mini = float('inf')
+        idx = 0
+        for i, c in enumerate(s):
+            que.append(c)
+            counter_q[c] = counter_q.get(c, 0) + 1
+            while que and counter(counter_q, counter_t):
+                if len(que) < mini:
+                    mini = len(que)
+                    idx = i
+
+                tmp = que.popleft()
+                counter_q[tmp] -= 1
+
+        if mini < float('inf'):
+            return s[idx - mini + 1:idx + 1]
+        else:
+            return ''
+######################################################################################################################
+# 左右两边扫描
+
+class Solution_838:
+    def pushDominoes(self, dominoes: str) -> str:
+        # 两遍的解法， 一遍从左向右，一遍从右向左
+        # 和 821 差不多
+        N = len(dominoes)
+        force = [0] * N
+
+        f = 0
+        for i in range(N):
+            if dominoes[i] == 'R':
+                f = N
+            elif dominoes[i] == 'L':
+                f = 0
+            else:
+                f = max(f - 1, 0)
+            force[i] += f
+
+        f = 0
+        for i in range(N - 1, -1, -1):
+            if dominoes[i] == 'L':
+                f = N
+            elif dominoes[i] == 'R':
+                f = 0
+            else:
+                f = max(f - 1, 0)
+            force[i] -= f
+
+        tmp = []
+        for f in force:
+            if f == 0:
+                tmp.append('.')
+            elif f > 0:
+                tmp.append('R')
+            else:
+                tmp.append('L')
+        return ''.join(tmp)
+
+
+class Solution_845:
+    def longestMountain(self, A: List[int]) -> int:
+        # O(n) time, O(1) space
+        # 我们使用两次遍历，从左到右，从右到左
+        n = len(A)
+        up, down = [0] * n, [0] * n
+        for i in range(1, n):
+            if A[i] > A[i - 1]:
+                up[i] = up[i - 1] + 1
+
+        for i in range(n - 2, -1, -1):
+            if A[i] > A[i + 1]:
+                down[i] = down[i + 1] + 1
+
+        res = 0
+        # 上下必须都大于零的才算
+        for i in range(n):
+            if up[i] > 0 and down[i] > 0:
+                res = max(res, up[i] + down[i] + 1)
+
+        return res
+
+    def longestMountain(self, A: List[int]) -> int:
+        res = up = down = 0
+        for i in range(1, len(A)):
+            # 前面是下降 且变上升 -> 谷底
+            # 前一个和当前相等了
+            if (down and A[i - 1] < A[i]) or A[i - 1] == A[i]:
+                up = down = 0
+            up += A[i - 1] < A[i]  # 上升
+            down += A[i - 1] > A[i]  # 下降
+            if up and down:
+                res = max(res, up + down + 1)
+        return res
 

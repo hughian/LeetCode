@@ -335,7 +335,7 @@ class Solution_109:
 class Codec_449:
 
     def serialize(self, root):
-        """Encodes a tree to a single string.
+        """Encodes din tree to din single string.
 
         :type root: TreeNode
         :rtype: str
@@ -391,7 +391,7 @@ class Codec_449:
     #################################################################
     # another solution
     def serialize(self, root):
-        """Encodes a tree to a single string.
+        """Encodes din tree to din single string.
 
         :type root: TreeNode
         :rtype: str
@@ -483,11 +483,11 @@ class Trie_208:
 
     def insert(self, word: str) -> None:
         """
-        Inserts a word into the trie.
+        Inserts din word into the trie.
         """
         p = self.root
         for c in word:
-            ix = ord(c.lower()) - ord('a')
+            ix = ord(c.lower()) - ord('din')
             if p.child[ix] is None:
                 p.child[ix] = TrieNode()
             p = p.child[ix]
@@ -499,7 +499,7 @@ class Trie_208:
         """
         p = self.root
         for c in word:
-            ix = ord(c.lower()) - ord('a')
+            ix = ord(c.lower()) - ord('din')
             if p.child[ix] is None:
                 return False
             p = p.child[ix]
@@ -511,8 +511,166 @@ class Trie_208:
         """
         p = self.root
         for c in prefix:
-            ix = ord(c.lower()) - ord('a')
+            ix = ord(c.lower()) - ord('din')
             if p.child[ix] is None:
                 return False
             p = p.child[ix]
         return True
+
+
+class Solution_1123:
+    def lcaDeepestLeaves(self, root: TreeNode) -> TreeNode:
+        # postorder
+        def postorder(root):
+            if not root: return 0, None
+            left, l_node = postorder(root.left)
+            right, r_node = postorder(root.right)
+
+            if left == right:
+                node = root
+            elif left > right:
+                node = l_node
+            else:
+                node = r_node
+            return max(left, right) + 1, node
+
+        return postorder(root)[1]
+
+
+class Solution_655:
+    def printTree(self, root: TreeNode) -> List[List[str]]:
+        def get_height(root):
+            if not root: return 0
+            return 1 + max(get_height(root.left), get_height(root.right))
+
+        def fill(res, root, i, lo, hi):
+            if not root: return
+            mid = (lo + hi) // 2
+            res[i][mid] = str(root.val)
+            fill(res, root.left, i + 1, lo, mid)
+            fill(res, root.right, i + 1, mid + 1, hi)
+
+        m = get_height(root)
+        res = [[""] * ((1 << m) - 1) for _ in range(m)]
+        fill(res, root, 0, 0, len(res[0]))
+        return res
+
+
+class Solution_834:
+    def sumOfDistancesInTree(self, N: int, edges: List[List[int]]) -> List[int]:
+        # 图问题，任意两点间的距离
+        # floyed 算法，TLE(即使是优化的 dijkstra 也是 TLE)
+        dist = [[float('inf')] * N for _ in range(N)]
+        for i in range(N):
+            dist[i][i] = 0
+
+        for a, b in edges:
+            dist[a][b] = dist[b][a] = 1
+
+        for mid in range(N):
+            for i in range(N):
+                for j in range(N):
+                    temp = dist[i][mid] + dist[mid][j]
+                    if dist[i][j] > temp:
+                        dist[i][j] = temp
+
+        # print(dist)
+        return [sum(dist[i]) for i in range(N)]
+
+    def sumOfDistancesInTree(self, N: int, edges: List[List[int]]) -> List[int]:
+        G = collections.defaultdict(list)
+        for u, v in edges:
+            G[u].append(v)
+            G[v].append(u)
+
+        count = [1] * N
+        ans = [0] * N
+
+        def dfs(node, parent):
+            for v in G[node]:
+                if v != parent:
+                    dfs(v, node)
+                    count[node] += count[v]  # 加上子树的节点数
+                    # 这一句保证在 dfs 结束后得到了 ans[root] 正确答案
+                    # ans[v] 是子节点的答案(暂时)，
+                    # + count[v] 表示加上node -> v 这条路径，乘上了子树节点数
+                    ans[node] += ans[v] + count[v]
+
+        def helper(node, parent):
+            for v in G[node]:
+                if v != parent:
+                    # 有了上一步计算出 root 的正确答案之后，就可以使用
+                    # ans[x] - ans[y] = #(Y) - #(X)
+                    # ans[x] = ans[y] + #(Y) - #(X)
+                    # 来递归地计算其他部分的答案
+                    ans[v] = ans[node] - count[v] + N - count[v]
+                    helper(v, node)
+
+        dfs(0, None)
+        helper(0, None)
+        return ans
+
+class Solution_1367:
+    def isSubPath(self, head: ListNode, root: TreeNode) -> bool:
+        # res = False
+        def foo(root, p):
+            # 检查一个分支
+            if not p: return True
+            if not root: return False
+
+            return root.val == p.val and (foo(root.left, p.next) or foo(root.right, p.next))
+
+        # 递归检查所有
+        if not head: return True
+        if not root: return False
+
+        return foo(root, head) or self.isSubPath(head, root.left) or self.isSubPath(head, root.right)
+
+
+class Solution_1372:
+    def longestZigZag(self, root: TreeNode) -> int:
+        # post order
+        res = 0
+
+        def post(root):
+            nonlocal res
+            if not root:
+                return 0, 0
+            ll, lr = post(root.left)
+            rl, rr = post(root.right)
+            res = max(res, ll, lr + 1, rl + 1, rr)
+            return lr + 1, rl + 1
+
+        post(root)
+        return res - 1
+
+
+class Solution_1028:
+    def recoverFromPreorder(self, S: str) -> TreeNode:
+        # split, 可以使用正则式
+        # vals = [(len(s[1]), int(s[2])) for s in re.findall("((-*)(\d+))", S)][::-1]
+        # 也可以手动来分
+        tmp = []
+        lv = cur = 0
+        last = ''
+        for c in S:
+            if c == '-':
+                if last != '-':
+                    tmp.append((lv, cur))
+                    lv = cur = 0
+                lv += 1
+            else:
+                cur = cur * 10 + int(c)
+            last = c
+        tmp.append((lv, cur))
+        vals = list(reversed(tmp))
+
+        def create(vals, lv):
+            if not vals or lv != vals[-1][0]:
+                return None
+            _, v = vals.pop()
+            root = TreeNode(v)
+            root.left = create(vals, lv+1)
+            root.right = create(vals, lv+1)
+            return root
+        return create(vals, 0)

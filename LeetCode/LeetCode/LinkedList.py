@@ -58,7 +58,7 @@ class MyLinkedList:
 
     def addAtHead(self, val: int) -> None:
         """
-        Add a node of value val before the first element of the linked list.
+        Add din node of value val before the first element of the linked list.
         After the insertion, the new node will be the first node of the linked list.
         """
         p = ListNode(val)
@@ -70,7 +70,7 @@ class MyLinkedList:
 
     def addAtTail(self, val: int) -> None:
         """
-        Append a node of value val to the last element of the linked list.
+        Append din node of value val to the last element of the linked list.
         """
         print('tail=', self.tail.val)
         p = ListNode(val)
@@ -82,7 +82,7 @@ class MyLinkedList:
 
     def addAtIndex(self, index: int, val: int) -> None:
         """
-        Add a node of value val before the index-th node in the linked list.
+        Add din node of value val before the index-th node in the linked list.
         If index equals to the length of linked list, the node will be appended
         to the end of linked list. If index is greater than the length, the
         node will not be inserted.
@@ -270,4 +270,78 @@ class Solution_147:
 
 class Solution_25:
     def reverseKGroup(self, head: ListNode, k: int) -> ListNode:
-        pass
+        # constant space, do it in-place
+        def _reverse(h):
+            cur = h.next
+            prev = h
+            h.next = None
+            while cur:
+                next_node = cur.next
+                cur.next = prev
+
+                prev = cur
+                cur = next_node
+            return prev, h
+        # reverse k-Group
+        # last_tail.next = cur_head
+        dummy = last_tail = ListNode(None)
+        p = head
+        h = head
+        cnt = 0
+        while p:
+            cnt += 1
+            if cnt == k:
+                tmp = p.next
+                p.next = None
+                h, t = _reverse(h)
+                last_tail.next = h
+                last_tail = t
+
+                h = tmp
+                cnt = 0
+                p = h
+            else:
+                p = p.next
+        if cnt > 0:
+            last_tail.next = h
+        return dummy.next
+
+
+# class used by 138
+class Node:
+    def __init__(self, val, next, random):
+        self.val = val
+        self.next = next
+        self.random = random
+
+
+class Solution_138:
+    def copyRandomList(self, head: 'Node') -> 'Node':
+        if not head:
+            return None
+        p = head
+        while p:
+            np = Node(p.val, None, None)
+            t = p.next
+            p.next = np
+            np.next = t
+            p = np.next
+
+        p = head
+        while p:
+            np = p.next
+            if p.random:
+                # print(p,np)
+                np.random = p.random.next
+            p = np.next
+        p = head
+        np_head = head.next
+        while p:
+            np = p.next
+            p.next = np.next
+            if p.next:
+                np.next = p.next.next
+            else:
+                np.next = None
+            p = p.next
+        return np_head

@@ -13,7 +13,7 @@ class Solution_10:
             if i == j == 0:
                 return True
             elif i == 0:
-                # 处理 a*, .*, a*b* 这种特殊情况
+                # 处理 din*, .*, din*b* 这种特殊情况
                 if p[j - 1] == '*':
                     return foo(i, j - 2)
                 else:
@@ -80,7 +80,7 @@ class Solution_10:
         m, n = len(s), len(p)
         dp = [[False for _ in range(n + 1)] for _ in range(m + 1)]
         dp[0][0] = True
-        # 处理 a*, .*, a*b* 这种特殊情况
+        # 处理 din*, .*, din*b* 这种特殊情况
         for i in range(1, n + 1):
             if p[i - 1] == '*':
                 dp[0][i] = dp[0][i - 2]
@@ -148,10 +148,10 @@ class Solution_10:
     @staticmethod
     def debug():
         s = Solution_10()
-        assert s.isMatch("aa", "a*") is True
-        assert s.isMatch("aa", "a") is False
+        assert s.isMatch("aa", "din*") is True
+        assert s.isMatch("aa", "din") is False
         assert s.isMatch("ab", ".*") is True
-        assert s.isMatch("aab", "c*a*b") is True
+        assert s.isMatch("aab", "c*din*b") is True
         assert s.isMatch("mississippi", "mis*is*p*.") is False
 
 
@@ -815,7 +815,7 @@ class Solution_467:
         # 注意到无穷串 s 中任意两个相邻字符都有：
         #  (ord(s[i+1]) - ord(s[i])) % 26 == 1
         # 对于 p ，使用一个例子来说明：abcde
-        #   a: 5, b: 4, c: 3, d:2, e:1, 对应表示以字符开头的，是 s 的子串的个数
+        #   din: 5, b: 4, c: 3, d:2, e:1, 对应表示以字符开头的，是 s 的子串的个数
         # 求和 5 + 4 + 3 + 2 + 1就是最终结果，由于一个字符可能回多次出现，我们只
         # 要连续长度最长的一个就好（求max）。
         res = {c: 1 for c in p}
@@ -947,7 +947,7 @@ class Solution_647:
         # 点对称的字符串是否为回文串。检查的时候同时向两端扩展就可以了。
         # 唯一值得注意的是，偶数位置是指向原字符串的字符，奇数位置指向的两个字符中间的位置。
         # 如例子
-        #         a  |  b  |  b  |  a  |  c
+        #         din  |  b  |  b  |  din  |  c
         #  index: 0  1  2  3  4  5  6  7  8
         n = len(s)
         res = 0
@@ -1375,7 +1375,7 @@ class Solution_375:
     def getMoneyAmount(self, n: int) -> int:
         # 优化时间复杂度为O(n^2)
         # > 在二分查找的题目：887.丢鸡蛋问题中，我们有一个类似的式子：
-        # >      dp(k, n) = min_{1<=X<=N} (max(dp(k-1, x-1), dp(k, n-x)))
+        # >      dp(k, n) = min_{1<=X_train<=N} (max(dp(k-1, x-1), dp(k, n-x)))
         # > 其中t1 = dp(k-1, x-1), 随x单调增
         # >     t2 = dp(k, n-x),  随x单调减
         # > 于是max(t1,t2)是二者的上半部分
@@ -1438,7 +1438,7 @@ class Solution_1262:
     def maxSumDivThree(self, nums: List[int]) -> int:
 
         def _foo(i, a):
-            # 这个暴力写起来简单，但是有向下递归的 a 以及向上回溯的 return max.
+            # 这个暴力写起来简单，但是有向下递归的 din 以及向上回溯的 return max.
             # 而且状态定义不明确，所以不好转换成dp
             if i == len(nums):
                 return a if a % 3 == 0 else 0
@@ -1546,3 +1546,348 @@ class Solution_1227:
         #                = (K+1)/(2*(k+1)) = 1/2
         # 综和 1 和 2 得证。
         return 1.0 if n == 1 else 0.5
+
+class Solution_1320:
+    # DP, String
+    def minimumDistance(self, word: str) -> int:
+        def _dist(a, b):
+            a = divmod(ord(a) - ord('A'), 6)
+            b = divmod(ord(b) - ord('A'), 6)
+            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+        # 第一字母选择 finger 1, 之后的字母两种选择，finger 2/1，找一个最小值
+        # 关键点是找到 figure 2 的入点
+        # 使用 DFS + memo
+        memo = {}
+        def foo(f1, f2, j):
+            nonlocal memo
+            d = 0
+            i = j + 1
+            if (f1, f2, j) in memo:
+                return memo[(f1,f2, j)]
+            if i < len(word):
+                d1, d2 = _dist(f1, word[i]), _dist(f2, word[i])
+                d = min(d1 + foo(word[i], f2, i), d2 + foo(f1, word[i], i))
+            memo[(f1, f2, j)] = d
+            return d
+
+        pre = [0] * len(word)  # 表示加到当前为止的 dist
+        dp = [[]]  # pass
+        res = float('inf')
+        for j in range(1, len(word)):
+            if j > 1:
+                pre[j - 1] += pre[j - 2] + _dist(word[j - 2], word[j - 1])
+
+            dist = pre[j - 1]
+            f1, f2 = word[j - 1], word[j]
+            dist += foo(f1, f2, j)
+            print(dist)
+            res = min(res, dist)
+        print(pre)
+        return res
+
+    def minimumDistance(self, word: str) -> int:
+        # DP 3D
+        def _dist(a, b):
+            if a == 26:
+                return 0
+            return abs(a//6 - b//6) + abs(a % 6 - b % 6)
+
+        dp = [[[0] * 27 for _ in range(27)] for _ in range(301)]
+        for k in range(len(word)-1, -1, -1):
+            b = ord(word[k]) - ord('A')
+            for i in range(27):  # finger 1
+                for j in range(27):  # finger 2
+                    dp[k][i][j] = min(dp[k+1][i][b] + _dist(j, b), dp[k+1][j][b] + _dist(i, b))
+        return dp[0][26][26]
+
+    def minimumDistance(self, word: str) -> int:
+        # DP 2D
+        def _dist(a, b):
+            if a == 26:
+                return 0
+            return abs(a//6 - b//6) + abs(a % 6 - b % 6)
+        # f1, f2 -> dist
+        dp, dp_ = {(26, 26): 0}, {}
+        for c in word:
+            t = ord(c) - ord('A')
+            for a, b in dp:
+                dp_[t, b] = min(dp_.get((t, b), float('inf')), dp[a, b] + _dist(a, t))  # f1 移动到t
+                dp_[a, t] = min(dp_.get((a, t), float('inf')), dp[a, b] + _dist(b, t))  # f2 移动到t
+            dp, dp_ = dp_, {}
+        return min(dp.values())
+
+    def minimumDistance(self, word: str) -> int:
+        # DP 1D 超出我的理解范围了
+        def _dist(a, b):
+            return abs(a//6 - b//6) + abs(a % 6 - b % 6)
+
+        dp = [0] * 26
+        s = 0
+        for i in range(1, len(word)):
+            b, c = ord(word[i-1]) - ord('A'), ord(word[i]) - ord('A')
+            s += _dist(b, c)
+            dp[b] = max(dp[a] + _dist(b, c) - _dist(a, c) for a in range(26))
+
+        return s - max(dp)
+
+class Solution_1312:
+
+    def minInsertions(self, s):
+        n = len(s)
+        dp = [[0] * n for _ in range(n)]
+        # dp(i, j) 表示 s[i:j+1] 是需要插入的次数
+
+        # 计算顺序是主对角线，从左上到右下。之后在计算右上一行，一直到计算出 dp[0][n-1]
+        for L in range(n - 1, -1, -1):
+            for i in range(L):
+                j = i + n - L
+                # 如果 s[i] == s[j]，则情况等价于 s[i+1:(j-1)+1] 的情况 dp[i+1][j-1]
+                if s[i] == s[j]:
+                    dp[i][j] = dp[i + 1][j - 1]
+                else:
+                    # 不相等的情况，就是左边插入一个/右边插入一个的最小值，即 dp[i+1][j] / dp[i][j-1]
+                    dp[i][j] = 1 + min(dp[i + 1][j], dp[i][j - 1])
+
+        return dp[0][n - 1]
+
+
+#######################################################################################################################
+# 以下两个都用了 mono stack + DP 的方法
+
+class Solution_1340:
+    def maxJumps(self, arr: List[int], d: int) -> int:
+        # 只能跳到在 [i-d, i+d] 之间比 arr[i] 小的，并且当前位置 i 和目标位置 j
+        # 之间的数字都比当前低。
+
+        # DP 问题，dp[i] 表示从当前位置能完成的最大跳数
+        # 递推式：dp[i] = 1 + max(dp[j]) , j 表示从 i 出发所有能到达的位置
+
+        def foo(i, dp):
+            if dp[i]:
+                return dp[i]
+            r = 1
+
+            for k in range(1, d+1):
+                if i-k >= 0 and arr[i-k] < arr[i]:
+                    r = max(r, 1 + foo(i - k, dp))
+                else:
+                    break
+            for k in range(1, d+1):
+                if i+k < len(arr) and arr[i + k] < arr[i]:
+                    r = max(r, 1 + foo(i + k, dp))
+                else:
+                    break
+
+            dp[i] = r
+            return r
+
+        dp = [0] * len(arr)
+        for i in range(len(arr)):
+            foo(i, dp)
+
+        return max(dp)
+
+    def maxJumps(self, arr: List[int], d: int) -> int:
+        # Bottom Up DP
+        # 对于每个 状态的值 其依赖与比它小的状态值
+        # 则我们可以对原数组进行排序后再DP
+        # 时间复杂度： O(nlogn + nd)
+        dp = [1] * len(arr)
+        for a, i in sorted([a, i] for i, a in enumerate(arr)):
+            for di in [-1, 1]:  # 方向
+                for j in range(i+di, i+di*d+ di, di):
+                    if not (0<=j<len(arr) and arr[j] < arr[i]): break
+                    dp[i] = max(dp[i], dp[j]+1)
+        print(dp)
+        return max(dp)
+
+    def maxJumps(self, arr: List[int], d: int) -> int:
+        # 单调栈 + DP
+        # Decreasing Stack + DP
+        # 显然初始值是 1
+        # 使用一个降序栈，每次从栈中弹出的元素，就是当前位置往左可以跳到的元素(满足 i-j <= d)，
+        # 左边的 i-d 范围内，低于 arr[i] 的元素都是可以跳到的。
+        # 同时，弹出的元素是此时栈顶元素往右可以跳到的位置(满足 j-stack[-1] <= d), 右边的 i+d 范围
+        # 内，低于 arr[stack[-1]] 的元素都是可以跳到的。
+        # 这样，递推的过程就解决了。
+        # 另外，我们在数组最后添加一个 float('inf') 作为终止节点，这样我们会在遇到终止节点时将栈弹空。
+        n = len(arr)
+        dp = [1] * (n + 1)
+        stack = []
+        for i, x in enumerate(arr + [float('inf')]):
+            while stack and arr[stack[-1]] < x:
+                L = [stack.pop()]
+
+                # 弹出一堆相同的数
+                while stack and arr[stack[-1]] == arr[L[0]]:
+                    L.append(stack.pop())
+
+                for j in L:
+                    if i - j <= d:
+                        dp[i] = max(dp[i], dp[j]+1)  # i 左边可以跳到的位置
+
+                    if stack and j - stack[-1] <= d:  # stack[-1] 右边可以跳到的位置
+                        dp[stack[-1]] = max(dp[stack[-1]], dp[j]+1)
+            stack.append(i)
+        return max(dp[:-1])
+
+
+class Solution_1335:
+    def minDifficulty(self, jobDifficulty: List[int], d: int) -> int:
+        # 数组，划分成 d 非空子数组，使得每个子数组的最的值的和最小
+        # min(sum(max(Ai) for i in range(d)))
+        # 枚举所有的子划分
+        # dp(i, d) 表示从 i 开始 剩余 d 次划分的结果
+        # d(i, d) = min(max(A[i:j+1])+dp(j+1, d-1) for j in range(i, n-d+1))
+        n = len(jobDifficulty)
+        if n < d: return -1
+
+        dp = [[-1] * (d + 1) for _ in range(n)]
+
+        def dfs(i, d, dp):
+            if dp[i][d] != -1:
+                return dp[i][d]
+
+            if d == 1:
+                return max(jobDifficulty[i:])
+            res, maxd = float('inf'), 0
+            for j in range(i, n - d + 1):  # 从 i 开始到 n - d 保留一个
+                maxd = max(maxd, jobDifficulty[j])
+                res = min(res, maxd + dfs(j + 1, d - 1, dp))
+            dp[i][d] = res
+            return res
+
+        return dfs(0, d, dp)
+
+    def minDifficulty(self, jobDifficulty: List[int], d: int) -> int:
+        # 将上述 dfs + memo 转换为 DP
+        # d(i, d) = min(max(A[i:j+1])+dp(j+1, d-1) for j in range(i, n-d+1))
+        n = len(jobDifficulty)
+        if n < d: return -1
+
+        dp = [[float('inf')] * n + [0] for _ in range(d+1)]
+        for i in range(1, d + 1):
+            for k in range(n-i+1):
+                m = 0
+                for j in range(k, n - i + 1):
+                    m = max(m, jobDifficulty[j])
+                    dp[i][k] = min(dp[i][k], m + dp[i-1][j + 1])
+
+        return dp[d][0]
+
+    def minDifficulty(self, jobDifficulty: List[int], d: int) -> int:
+        # 空间优化，每次只依赖于前一行(d-1), 因此可以对空间进行优化
+        # 对于行内，计算 dp[i] 时 用到的是 range(i, n-i+1) 都是 i 后面的，正向循环时还未更新过，
+        # 恰好是 d-1 时对应的值。
+        n = len(jobDifficulty)
+        if n < d: return -1
+
+        dp = [float('inf')] * n + [0]
+        for i in range(1, d + 1):
+            for k in range(n - i + 1):
+                m, dp[k] = 0, float('inf')
+                for j in range(k, n - i + 1):
+                    m = max(m, jobDifficulty[j])
+                    dp[k] = min(dp[k], m + dp[j + 1])
+
+        return dp[0]
+
+    def minDifficulty(self, jobDifficulty: List[int], d: int) -> int:
+        # 单调栈 + DP
+        # TODO 理解
+        n = len(jobDifficulty)
+        if n < d: return -1
+        dp, dp_ = [float('inf')] * n, [0] * n
+
+        for d in range(d):
+            stack = []
+            for i in range(d, n):
+                dp_[i] = dp[i-1] + jobDifficulty[i] if i else jobDifficulty[i]
+                # 单调减的栈
+                while stack and jobDifficulty[stack[-1]] <= jobDifficulty[i]:
+                    j = stack.pop()  # 弹出比当前 objDifficulty[i] 小的元素
+                    dp_[i] = min(dp_[i], dp_[j] - jobDifficulty[j] + jobDifficulty[i])
+                if stack:
+                    dp_[i] = min(dp_[i], dp_[stack[-1]])
+                stack.append(i)
+            dp, dp_ = dp_, [0] * n
+        return dp[-1]
+
+    def minDifficulty(self, jobDifficulty: List[int], d: int) -> int:
+        n = len(jobDifficulty)
+        if n < d: return -1
+
+        dp, dp_ = [0] * n, [0] * n
+
+        # 初始存储到当前位置的最大值
+        dp[0] = jobDifficulty[0]
+        for i in range(1, n):
+            dp[i] = max(dp[i-1], jobDifficulty[i])
+
+        # 外层循环 1 ~ d-1
+        for d in range(1, d):
+            dp, dp_ = dp_, dp  # 交换
+            # monotonic and minimum stack {dp_old_Best, curMax, bestSoFar}
+            stack = [[float('inf'), float('inf'), float('inf')]]
+            for i in range(d, n):
+                old_best = dp_[i-1]
+                while stack[-1][1] <= jobDifficulty[i]:
+                    old_best = min(old_best, stack[-1][0])
+                    stack.pop()
+
+                stack.append([old_best, jobDifficulty[i], min(old_best + jobDifficulty[i], stack[-1][2])])
+                dp[i] = stack[-1][2]
+        return dp[-1]
+
+class Solution_1130:
+    def mctFromLeafValues(self, arr: List[int]) -> int:
+        # 单调栈
+        res = 0
+        stack = [float('inf')]
+        for x in arr:
+            # 我们事先存了一个 inf, 避免了判断 stack 不为空
+            while stack[-1] <= x:  # 栈顶比当前元素小
+                t = stack.pop()
+                res += t * min(stack[-1], x)
+            stack.append(x)
+
+        while len(stack) > 2:
+            res += stack.pop() * stack[-1]
+
+        return res
+
+    def mctFromLeafValues(self, arr: List[int]) -> int:
+        # dp(i, j) = dp(i, k) + dp(k+1, j) + root_val
+        def foo(i, j, memo):
+            if i >= j: return 0
+            if (i, j) not in memo:
+                res = float('inf')
+                for k in range(i + 1, j + 1):
+                    res = min(res, foo(i, k - 1, memo) + foo(k, j, memo) + max(arr[i:k]) * max(arr[k:j + 1]))
+                memo[i, j] = res
+            return memo[i, j]
+
+        return foo(0, len(arr) - 1, {})
+
+class Solution_403:
+    def canCross(self, stones: List[int]) -> bool:
+        dp = {}
+
+        def foo(i, k, dp):
+            if stones[i] >= stones[-1]:
+                return True
+            if (i, k) in dp:
+                return dp[i, k]
+
+            for jump in (k - 1, k, k + 1):
+                for j in range(i + 1, len(stones)):
+                    if stones[i] + jump < stones[j]: break
+                    if stones[i] + jump == stones[j]:
+                        if foo(j, jump, dp):
+                            dp[i, k] = True
+                            return True
+            dp[i, k] = False
+            return False
+
+        return foo(0, 0, dp)
