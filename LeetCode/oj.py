@@ -400,7 +400,7 @@ def four():
 # print(candy)
 
 
-class Solution:
+class Solution_386:
     def lexicalOrder(self, n: int):
         def foo(tmp, i, n):
             if i <= n:
@@ -413,6 +413,22 @@ class Solution:
             tmp = []
             foo(tmp, i, n)
             res += tmp
+        return res
+
+    def lexicalOrder(self, n: int):
+        cur = 1
+        res = []
+        for i in range(1, n + 1):
+            res.append(cur)
+            if cur * 10 <= n:  # 向下一层
+                cur *= 10
+            elif cur % 10 != 9 and cur + 1 <= n:  # 右兄弟，向右
+                cur += 1
+            else:
+                while (cur // 10) % 10 == 9:  # 既不能向下，也不能向右，就向上回溯
+                    cur //= 10
+
+                cur = cur // 10 + 1  # 回溯节点向右
         return res
 
 
@@ -1379,6 +1395,66 @@ class Solution_241:
         return t
 
 
+class Solution_980:
+    def uniquePathsIII(self, grid: List[List[int]]) -> int:
+        m, n = len(grid), len(grid[0])
+        todo = 0
+        for i in range(m):
+            for j in range(n):
+                if grid[i][j] != -1:
+                    todo += 1
+                if grid[i][j] == 1:
+                    start = (i, j)
+                elif grid[i][j] == 2:
+                    end = (i, j)
+
+        ans = 0
+
+        def dfs(i, j, todo):
+            nonlocal ans
+            todo -= 1
+            if todo < 0: return
+            if (i, j) == end:
+                if todo == 0:
+                    ans += 1
+                return
+            grid[i][j] = -1
+            for x, y in [(i, j - 1), (i, j + 1), (i - 1, j), (i + 1, j)]:
+                if 0 <= x < m and 0 <= y < n and grid[x][y] % 2 == 0:  # 2 也要算进去
+                    dfs(x, y, todo)
+            grid[i][j] = 0
+
+        dfs(start[0], start[1], todo)
+        return ans
+
+    def uniquePathsIII(self, grid: List[List[int]]) -> int:
+
+        m, n = len(grid), len(grid[0])
+        code = lambda x, y: 1 << (x * n + y)
+        target = 0  # 最长只有 20 位
+        for i in range(m):
+            for j in range(n):
+                if grid[i][j] % 2 == 0:
+                    target |= code(i, j)
+                if grid[i][j] == 1:
+                    start = (i, j)
+                elif grid[i][j] == 2:
+                    end = (i, j)
+
+        @functools.lru_cache(None)
+        def dfs(i, j, todo):
+            if (i, j) == end:
+                return int(todo == 0)
+            ans = 0
+            for x, y in [(i, j - 1), (i, j + 1), (i - 1, j), (i + 1, j)]:
+                if 0 <= x < m and 0 <= y < n and grid[x][y] % 2 == 0:  # 2 也要算进去
+                    if todo & code(x, y):
+                        ans += dfs(x, y, todo ^ code(x, y))
+            return ans
+
+        return dfs(start[0], start[1], target)
+
+
 class Solution_958:
     # determine if root is din complete binary tree
     def isCompleteTree(self, root):
@@ -1405,6 +1481,40 @@ class Solution_958:
             if node.right:
                 nodes.append((node.right, 2 * v + 1))
         return num == m
+
+
+class Solution_526:
+    def countArrangement(self, N: int) -> int:
+        # 暴力， TLE
+        res = 0
+        for ls in itertools.permutations(list(range(1, N + 1))):
+            if all(x % (i + 1) == 0 or (i + 1) % x == 0 for i, x in enumerate(ls)):
+                res += 1
+        return res
+
+    def countArrangement(self, N: int) -> int:
+        # dfs + 剪枝
+        def dfs(i, A):
+            if i >= N:
+                return 1 if (A[N] % i == 0 or i % A[N] == 0) else 0
+            res = 0
+            for j in range(i, N + 1):
+                if i % A[j] == 0 or A[j] % i == 0:
+                    tmp = A[:]
+                    tmp[i], tmp[j] = tmp[j], tmp[i]
+                    res += dfs(i + 1, tmp)
+            return res
+
+        return dfs(1, [0]+list(range(1, N + 1)))
+
+    def countArrangement(self, N: int) -> int:
+        # using set
+        def dfs(i, A):
+            if i > N:
+                return 1
+            return sum(dfs(i + 1, A - {x}) for x in A if x % i == 0 or i % x == 0)
+
+        return dfs(1, set(range(1, N + 1)))
 
 
 class Solution_450:
@@ -1634,6 +1744,20 @@ class WordDictionary_211:
         print(res)
 
 
+class Solution_910:
+    def smallestRangeII(self, A: List[int], K: int) -> int:
+        # 找最小的可能值
+        A.sort()
+        mi, ma = A[0], A[-1]
+        ans = ma - mi
+
+        for i in range(len(A) - 1):
+            a, b = A[i], A[i + 1]  # 我们不用考虑 a - K, b + K 这个肯定更大
+            ans = min(ans, max(ma - K, a + K) - min(mi + K, b - K))
+
+        return ans
+
+
 class NumArray:
     # NumArray_307
     # BIT(树形数组)
@@ -1834,6 +1958,83 @@ class Solution_347:
         return res[:k]
 
 
+class Solution_1319:
+    def makeConnected(self, n: int, connections: List[List[int]]) -> int:
+        # 顶点 0 ~ n-1
+        # 联通分量数 - 1
+        # edge case, # edge < # node - 1
+        if len(connections) < n - 1:
+            return -1
+        G = collections.defaultdict(list)
+        for a, b in connections:
+            G[a].append(b)
+            G[b].append(a)
+
+        visit = [0] * n
+
+        def dfs(i):
+            for v in G[i]:
+                if visit[v] == 0:
+                    visit[v] = 1
+                    dfs(v)
+
+        cnt = 0
+        for i in range(n):
+            if visit[i] == 0:
+                cnt += 1
+                visit[i] = 1
+                dfs(i)
+        return cnt - 1
+
+    def makeConnected(self, n: int, connections: List[List[int]]) -> int:
+        # union find
+        if len(connections) < n - 1:
+            return -1
+
+        uf = list(range(n))
+
+        def find(x):
+            if uf[x] == x:
+                return x
+            uf[x] = find(uf[x])
+            return uf[x]
+
+        for a, b in connections:
+            fa = find(a)
+            fb = find(b)
+            if fa != fb:
+                uf[fa] = fb
+
+        cnt = sum(i == find(i) for i in range(n))
+        return cnt - 1
+
+
+class Solution_1106:
+    # stack
+    def parseBoolExpr(self, expression: str) -> bool:
+        stack = []
+        for c in expression:
+            if c == ')':
+                tt = []
+                while stack and stack[-1] != '(':
+                    ch = stack.pop()
+                    tt.append(ch)
+                stack.pop()
+                op = stack.pop()
+                if op == '&':
+                    res = all(ch == 't' for ch in tt)
+                elif op == '|':
+                    res = any(ch == 't' for ch in tt)
+                elif op == '!':
+                    res = False if tt[0] == 't' else True
+                else:
+                    raise
+                stack.append('t' if res else 'f')
+            elif c != ',':
+                stack.append(c)
+        return True if stack[0] == 't' else False
+
+
 class Solution_394:
     def decodeString(self, s: str) -> str:
         # 使用正则表达式
@@ -1894,6 +2095,104 @@ class Solution_394:
         if t:
             res.extend(t)
         return ''.join(res)
+
+    def decodeString(self, s):
+        stack = []
+        for c in s:
+            if c == ']':
+                tmp = []
+                while stack[-1] != '[':
+                    tmp.append(stack.pop())
+                tmp.reverse()
+                stack.pop()  # '['
+                base, cur = 1, 0
+                while stack and stack[-1].isdigit():
+                    cur += base * int(stack.pop())
+                    base *= 10
+                stack.append(''.join(tmp) * cur)
+            else:
+                stack.append(c)
+        return ''.join(stack)
+
+
+class Solution_1096:
+    def braceExpansionII(self, exp):
+        group = [[]]
+        lv = 0
+        for i, c in enumerate(exp):
+            if c == '{':
+                if lv == 0:  # 如果是最外层，记录这个 { 的开始
+                    start = i + 1  # 注意跳过了 i('{')
+                lv += 1
+            elif c == '}':
+                lv -= 1
+                if lv == 0:  # 如果是最外层，递归处理内层
+                    group[-1].append(self.braceExpansionII(exp[start:i]))
+            elif c == ',' and lv == 0:
+                group.append([])
+            elif lv == 0:
+                group[-1].append([c])  # 特殊 case R("din")
+        print(group)
+        ss = set()
+        for g in group:
+            print('#', g, *g)
+            ss |= set(map(''.join, itertools.product(*g)))
+        return sorted(ss)
+
+    def braceExpansionII(self, exp):
+        # 使用 res 保存一对 {} 内已经处理好的部分，cur 保存正在处理的部分。
+        # 遇到 } 出栈时与前面的结果进行 product, 然后最终的结果保存在 res + cur 中
+        # 这个思路太精妙了
+        stack, res, cur = [], [], []
+        for i, c in enumerate(exp):
+            if c.isalpha():
+                cur = [t + c for t in cur or ['']]
+            elif c == '{':
+                stack.append(res)
+                stack.append(cur)
+                res, cur = [], []
+            elif c == '}':
+                pre = stack.pop()
+                pre_res = stack.pop()
+                cur = [p + t for t in res + cur for p in pre or ['']]
+                res = pre_res
+            elif c == ',':
+                res += cur
+                cur = []
+        return sorted(set(res + cur))
+
+
+class Solution_1240:
+    def tilingRectangle(self, n: int, m: int) -> int:
+        # 如果有一个解的话，我们可以从下往上填充正方形，这样就每个位置我们存一个高度，就像 Skyline 一样
+        # 一个数组，存着每个位置的高度（可以看作将大矩形分成许多1x1的小格子）
+        res = m * n
+
+        def foo(height, moves):
+            nonlocal res
+            if all(h == n for h in height):  # 全部填满了，就是填满了整个矩形
+                res = min(res, moves)
+                return
+            if moves >= res:  # 如果填充数目已经超过了目前的最小结果，剪枝
+                return
+
+            min_h = min(height)  # 当前的最低高度
+            idx = height.index(min_h)
+            ridx = idx + 1
+            while ridx < m and height[ridx] == min_h:
+                ridx += 1
+            # idx ~ ridx 都是 height[i] == min_h 的位置，==> 宽度
+            # n - min_h => 高度。
+            # 我们最大可以填充一个边长为 min(宽度， 高度) 的正方形
+            for i in range(min(ridx - idx, n - min_h), 0, -1):
+                tmp = height[:]
+                for j in range(i):
+                    tmp[idx + j] += i
+                # 将这一段填充，之后继续递归
+                foo(tmp, moves + 1)
+
+        foo([0] * m, 0)
+        return res
 
 
 class Solution_726:
@@ -2419,143 +2718,6 @@ class Solution_969:
         return ans
 
 
-class Solution_300:
-    # 这个题目Python卡时间太严了，O(n^2)也会 TLE
-    def lengthOfLIS(self, nums: List[int]) -> int:
-        # O(n^2) dp
-        # 0-1背包的变形题，枚举（递归） --> 带memo的递归 --> dp --> dp优化
-
-        def foo(idx, path):
-            # 这种前向和后向混在仪器，而且状态不明确，不好转换为带memo的搜索
-            print('#', idx, path)
-            if idx == len(nums):
-                return len(path) - 1
-            r = 0
-            if nums[idx] > path[-1]:
-                r = foo(idx + 1, path + [nums[idx]])
-            return max(r, foo(idx + 1, path))
-
-        def helper(last, idx):
-            if idx == len(nums):
-                print('#', last, idx, '0')
-                return 0
-            r = 0
-            if last < 0 or nums[last] < nums[idx]:
-                r = 1 + helper(idx, idx + 1)
-            t = max(r, helper(last, idx + 1))
-            print('#', last, idx, t)
-            return t
-
-        return helper(-1, 0)
-
-    def lengthOfLIS(self, nums: List[int]) -> int:
-        # 暴力转为带memo的搜索
-        memo = {}
-
-        def helper(last, idx):
-            nonlocal memo
-            if idx == len(nums):
-                return 0
-
-            if (last, idx) in memo:
-                return memo[(last, idx)]
-
-            r = 0
-            if last < 0 or nums[last] < nums[idx]:
-                r = 1 + helper(idx, idx + 1)
-            memo[(last, idx)] = max(r, helper(last, idx + 1))
-            return memo[(last, idx)]
-
-        return helper(-1, 0)
-
-    def lengthOfLIS(self, nums: List[int]) -> int:
-        # 带memo的搜索 转换为 后向DP
-        # 这里i 对应last, j对应idx. 存的时候因为last有-1， 所以+1存储
-        n = len(nums)
-        dp = [[0] * (n + 1) for _ in range(n + 1)]
-        max_len = 0
-        for last in range(n - 1, -2, -1):
-            for idx in range(n - 1, -1, -1):
-                r = 0
-                if last < 0 or nums[last] < nums[idx]:
-                    r = 1 + dp[idx + 1][idx]
-                dp[last + 1][idx] = max(r, dp[last + 1][idx + 1])
-                max_len = max(dp[last + 1][idx], max_len)
-        for ls in dp:
-            print(ls)
-        return max_len
-
-    def lengthOfLIS(self, nums: List[int]) -> int:
-        # 优化空间，前向DP, 跟上面的DP过程不太一样了
-        # dp[i] = max(dp[j]) + 1,  0 <= j < i
-        # ans = max(dp)
-
-        n = len(nums)
-        if n == 0:
-            return 0  # 边界条件
-        dp = [0] * n
-        dp[0] = 1
-        max_len = 0
-        for i in range(n):
-            tmp = 0
-            for j in range(i):
-                if nums[j] < nums[i]:
-                    tmp = max(tmp, dp[j])
-
-            dp[i] = tmp + 1
-            max_len = max(max_len, dp[i])
-        print(dp)
-        return max_len
-
-    def lengthOfLIS(self, nums: List[int]) -> int:
-        # dp + binary search
-        # O(n logn)
-        n = len(nums)
-        dp = [0] * n
-        length = 0
-        for x in nums:
-            idx = bisect.bisect_left(dp, x, 0, length)
-            dp[idx] = x
-            if idx == length:
-                length += 1
-
-        return length
-
-    def lengthOfLIS(self, nums: List[int]) -> int:
-        # dp + binary search的另一种写法
-        # 这里使用 dp 和 path 数组, 以及length 能够重建出其中一个最长子序列
-        # 例如：[3, 4, -1, 5, 8, 2, 3, 12, 7, 9, 10]
-        # 对应的dp: [2, 5, 6, 8, 9, 10, 0, 0, 0, 0, 0]
-        # 对应的path: [-1, 0, -1, 1, 3, 2, 5, 4, 6, 8, 9]
-        # length为：6
-        # 首先 dp[length - 1] = 10
-        # path[10] = 9
-        # path[9] = 8
-        # path[8] = 6
-        # path[6] = 5
-        # path[5] = 2
-        # path[2] = -1
-        # 重建的最长子序列为
-        # index   2   5   6   8   9   10
-        #  num   -1   2   3   7   9   10
-        n = len(nums)
-        tmp = [0] * n
-        dp = [0] * n
-        path = [-1] * n
-        length = 0
-        for i, x in enumerate(nums):
-            idx = bisect.bisect_left(tmp, x, 0, length)
-            dp[idx] = i
-            tmp[idx] = x
-            if idx > 0:
-                path[i] = dp[idx - 1]
-            if idx == length:
-                length += 1
-        print(dp)
-        print(path)
-        return length
-
-
 class Solution_673:
     # TODO
     def findNumberOfLIS(self, nums: List[int]) -> int:
@@ -2619,8 +2781,8 @@ class Solution_794:
         ts.append([board[0][2], board[1][1], board[2][0]])
 
         for t in ts:
-            if all(c == 'X_train' for c in t):
-                wins.add('X_train')
+            if all(c == 'x_train' for c in t):
+                wins.add('x_train')
             elif all(c == 'O' for c in t):
                 wins.add('O')
         return wins
@@ -2631,12 +2793,12 @@ class Solution_794:
         x, o = 0, 0
         for s in board:
             for c in s:
-                if c == 'X_train':
+                if c == 'x_train':
                     x += 1
                 elif c == 'O':
                     o += 1
         wins = self.winner(board)
-        if x == o and len(wins) < 2 and 'X_train' not in wins:
+        if x == o and len(wins) < 2 and 'x_train' not in wins:
             return True
         elif x == o + 1 and len(wins) < 2 and 'O' not in wins:
             return True
@@ -2722,7 +2884,7 @@ class Solution_856:
 
 class Solution_1003:
     def isValid(self, s: str) -> bool:
-        # 注意 aabcbabcc 也是 valid 的，根据定义，[din]abc[bc] 是 valid , 我们可以把它分成两部分 X_train = aabcb, Y = c
+        # 注意 aabcbabcc 也是 valid 的，根据定义，[din]abc[bc] 是 valid , 我们可以把它分成两部分 x_train = aabcb, Y = c
         # 于是有 [aabcb]abc[c] 也是 valid
         t = ''
         while s != t:
@@ -3179,7 +3341,7 @@ class Solution_164:
         # 桶排序 + 鸽笼原理
         # 首先，最大的 gap 一定是满足 >=  t = (max - min) / (n-1)
         #       n 个数有 n-1 个 gap。假设有一个间距为 t 的等差数列，
-        #       gap 值都是 t, maxGap 自然也是 n, 假如你想减小某两个元素
+        #       gap 值都是 t, maxGap 自然也是 t, 假如你想减小某两个元素
         #       之间的 gap, 那么相邻的 gap 自然会增加，导致 maxGap 增大
         # 其次，我们可以选择一个桶的大小（capacity）为 b，其中 b 满足 1 < b <= t，这样
         #       每个桶内任意两个元素的 gap 小于 t, 都不会最终的答案
@@ -3855,6 +4017,175 @@ class Solution_427:
         return create(grid, 0, 0, n - 1, n - 1)
 
 
+class Solution_1366:
+    def rankTeams(self, votes: List[str]) -> str:
+        n = len(votes[0])
+        cnt = {k: [0] * n + [-ord(k)] for k in votes[0]}
+        for vote in votes:
+            for i, c in enumerate(vote):
+                cnt[c][i] += 1
+
+        res = sorted(cnt.values(), reverse=True)
+        # print(res)
+        return ''.join(chr(-k[n]) for k in res)
+
+
+class Solution_864:
+    def shortestPathAllKeys(self, grid: List[str]) -> int:
+        # keys => use bitmasking
+        # BFS 时将 (i, j, 已经获得的 key) 放入 visit
+        m, n = len(grid), len(grid[0])
+        start = (0, 0)
+        key = 0
+        for i in range(m):
+            for j in range(n):
+                if grid[i][j] == '@':
+                    start = (i, j)
+                elif ord('a') <= ord(grid[i][j]) <= ord('f'):
+                    key += 1
+
+        que = {(start[0], start[1], 0)}
+        visit = {(start[0], start[1], 0)}
+        step = 0
+
+        while que:
+            # print(que)
+            next_lv = set()
+            for i, j, c in que:
+                if c == 2 ** key - 1:
+                    return step
+
+                for x, y in [(i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)]:
+                    if 0 <= x < m and 0 <= y < n and grid[x][y] != '#':
+                        ch = grid[x][y]
+                        new_c = c
+                        if ord('A') <= ord(ch) <= ord('F') and not (new_c & (1 << (ord(ch.lower()) - ord('a')))):
+                            continue
+                        if ord('a') <= ord(ch) <= ord('f'):
+                            new_c |= (1 << (ord(ch) - ord('a')))
+                        if (x, y, new_c) not in visit:
+                            visit.add((x, y, new_c))
+                            next_lv.add((x, y, new_c))
+            step += 1
+            que = next_lv
+        return -1
+
+
+class Solution_1333:
+    def filterRestaurants(self, restaurants: List[List[int]], veganFriendly: int, maxPrice: int, maxDistance: int) -> \
+            List[int]:
+        res = [x for x in restaurants if x[2] >= veganFriendly and x[3] <= maxPrice and x[4] <= maxDistance]
+
+        res = sorted(res, key=lambda x: (-x[1], -x[0]))
+        return [x[0] for x in res]
+
+
+class Solution_488:
+    # 下面的代码是错误的但依然能够 AC, 对于一个Case:
+    #    board = "RRWWRRBBRR"; hand = "WB"
+    # 按照代码的思路是这样子：
+    #    RRWW[W]RRBBRR ->  RRRRBB[B]RR -> RRRRRR -> empty
+    # 或 RRWWRRBB[B]RR ->  RRWW[W]RRRR -> RRRRRR -> empty
+    # 而实际上，在第一次消除时，两个连续RR.RR 拼接到了一起，超过 3 个就会消除，所以这样会剩下两个 RR
+    # 正确的思路是 RRWWRRBBR[W]R -> RRWWRRBB[B]R[W]R -> RRWWRRR[W]R -> RRWW[W]R -> RRR -> empty
+    # 这样最终的答案都是插入两次，因此下面的代码也能够 AC
+
+    # 考虑另外一个 Case:
+    #    board = "WWRRWWRRWW", hand = "RRBBB"
+    # 使用代码的思路插入是 2 个，但是并不能正确，正确的思路是：
+    # WWRRW[B]WRRWW -> WWR[R]RW[B]WR[R]RWW -> WWW[B]WWW -> [B] -> [B][B][B] -> empty
+    # 这样插入的次数是 5.
+    def findMinStep(self, board: str, hand: str) -> int:
+        # ball, R, Y, B, G, W
+        # 0 < len(board) <= 16
+        # 0 < len(hand) <= 5
+        # 找出插入最少的球将 board 消除完，否则返回 -1
+        res = len(hand) + 1
+
+        def dfs(board, hand, cnt):
+            nonlocal res
+            if not board:
+                res = min(res, cnt)
+            last = None
+            for i, c in enumerate(board):
+                if last == c:
+                    j = i + 1
+                    while j < len(board) and board[j] == c:
+                        j += 1
+                    if j - (i - 1) >= 3:
+                        dfs(board[:i - 1] + board[j:], hand, cnt)
+                    elif j - (i - 1) >= 2 and c in hand:
+                        hand.remove(c)
+                        dfs(board[:i - 1] + board[j:], hand, cnt + 1)
+                        hand.append(c)
+                else:
+                    if hand.count(c) >= 2:
+                        hand.remove(c)
+                        hand.remove(c)
+                        dfs(board[:i] + board[i + 1:], hand, cnt + 2)
+                        hand.append(c)
+                        hand.append(c)
+                last = c
+
+        dfs(board, list(hand), 0)
+        return res if res <= len(hand) else -1
+
+
+class Solution_491:
+    def findSubsequences(self, nums: List[int]) -> List[List[int]]:
+        res = set()
+
+        def dfs(idx, tmp):
+            nonlocal res
+            if idx >= len(nums):
+                if len(tmp) >= 2:
+                    res.add(tuple(tmp))
+                return
+
+            if not tmp or tmp[-1] <= nums[idx]:
+                dfs(idx + 1, tmp + [nums[idx]])
+
+            dfs(idx + 1, tmp)
+
+        dfs(0, [])
+        return list(res)
+
+
+class Solution_1090:
+    def largestValsFromLabels(self, values: List[int], labels: List[int], num_wanted: int, use_limit: int) -> int:
+        # |S| <= num_wanted
+        A = sorted([(v, L) for v, L in zip(values, labels)], key=lambda x: -x[0])
+        cnt = collections.defaultdict(int)
+        i = res = 0
+        while num_wanted and i < len(A):
+            if cnt[A[i][1]] + 1 <= use_limit:
+                num_wanted -= 1
+                cnt[A[i][1]] += 1
+                res += A[i][0]
+            i += 1
+        return res
+
+
+class Solution_886:
+    def possibleBipartition(self, N: int, dislikes: List[List[int]]) -> bool:
+        # 二部图, 使用 染色法
+        G = collections.defaultdict(list)
+        for a, b in dislikes:
+            G[a].append(b)
+            G[b].append(a)
+
+        color = {}  # 存储染色的结果
+
+        def dfs(node, c=0):
+            if node in color:
+                return color[node] == c
+
+            color[node] = c
+            return all(dfs(v, c ^ 1) for v in G[node])
+
+        return all(dfs(n) for n in range(1, N + 1) if n not in color)
+
+
 ######################################################################################################################
 # heap
 
@@ -4264,7 +4595,10 @@ class Solution_871:
             prev = loc
         return ans
 
+
 import random
+
+
 class Solution_710:
 
     def __init__(self, N: int, blacklist: List[int]):
@@ -4284,6 +4618,7 @@ class Solution_710:
         while res in self.memo:
             return self.memo[res]
         return res
+
 
 class Solution_483:
     def smallestGoodBase(self, n: str) -> str:
@@ -4306,12 +4641,12 @@ class Solution_483:
         n = int(n)
         max_m = int(math.log(n, 2))
         for m in range(max_m, 1, -1):
-            base = int(n**(1/m))
+            base = int(n ** (1 / m))
 
-            if (base ** (m+1) - 1) // (base - 1) == n:
+            if (base ** (m + 1) - 1) // (base - 1) == n:
                 return str(base)
 
-        return str(n-1)
+        return str(n - 1)
 
 
 class Solution_525:
@@ -4341,6 +4676,7 @@ class Solution_525:
             else:
                 memo[cnt] = i
         return m
+
 
 class Solution_554:
     def leastBricks(self, wall: List[List[int]]) -> int:
@@ -4468,6 +4804,7 @@ class Solution_421:
             ans += any((ans ^ 1 ^ p) in prefix for p in prefix)
         return ans
 
+
 class Solution_1365:
     def smallerNumbersThanCurrent(self, nums: List[int]) -> List[int]:
         arr = sorted([(x, i) for i, x in enumerate(nums)])
@@ -4558,7 +4895,7 @@ class Solution_540:
 
 class Solution_1311:
     def watchedVideosByFriends(self, watchedVideos: List[List[str]], friends: List[List[int]], id: int, level: int) -> \
-    List[str]:
+            List[str]:
         # BFS first, 然后搜集层的结果
         n = len(friends)
         visit = [0] * n
@@ -4824,6 +5161,133 @@ class Solution_1094:
             capacity -= num
             heapq.heappush(pool, (eloc, num))
         return True
+
+
+class Solution_1368:
+    def minCost(self, grid: List[List[int]]) -> int:
+        # m, n \in [1, 100]
+        # BFS + DFS
+        # 先用 DFS 找出所有能够达到点，将这些点放入数组 bfs
+        # 然后遍历 bfs 数组修改并继续 DFS
+        m, n = len(grid), len(grid[0])
+        inf = 10 ** 9
+        dp = [[inf] * n for _ in range(m)]
+        k = 0
+        #              Right    Left    Down     Up
+        dirt = [None, (0, 1), (0, -1), (1, 0), (-1, 0)]
+        bfs = []
+
+        def dfs(x, y):
+            if 0 <= x < m and 0 <= y < n and dp[x][y] == inf:  # 这里dp 充当了visit 的作用
+                dp[x][y] = k
+                bfs.append([x, y])
+                dfs(x + dirt[grid[x][y]][0], y + dirt[grid[x][y]][1])
+
+        dfs(0, 0)
+        while bfs:
+            k += 1
+            bfs, bfs2 = [], bfs  # 这个其实就是每次出队列这一层
+            for x, y in bfs2:
+                for i, j in dirt[1:]:
+                    dfs(x + i, y + j)
+        return dp[-1][-1]
+
+
+class Solution_1162:
+    def maxDistance(self, grid: List[List[int]]) -> int:
+        # 从所有 grid[i][j] == 1 的节点同时出发做 BFS
+        # 最深的层数就是答案
+        N = len(grid)
+        inf = 201
+        dist = [[inf] * N for _ in range(N)]
+        bfs = set()
+        for i, j in itertools.product(range(N), range(N)):
+            if grid[i][j] == 1:
+                bfs.add((i, j))
+                dist[i][j] = 0
+
+        if len(bfs) == 0 or len(bfs) == N * N:
+            return -1
+        k = 0
+        while bfs:
+            k += 1
+            bfs, bfs2 = set(), bfs
+            for x, y in bfs2:
+                for i, j in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
+                    if 0 <= i < N and 0 <= j < N and dist[i][j] == inf:
+                        dist[i][j] = k
+                        bfs.add((i, j))
+        return k - 1
+
+
+class Solution_1036:
+    def isEscapePossible(self, blocked: List[List[int]], source: List[int], target: List[int]) -> bool:
+        # 直接 BFS 肯定超时，还可能超内存
+        # 考虑 block 作为一条线阻隔了 source 和 target, blocked 的长度不超过 200
+        # 因此被 blocked 挡住的区域是有限的，最大 19900 个格子（不算blocked本身)
+        # 所以我们用 BFS/DFS 搜索，探索超过 20000 > 19900 格子之后，就可以认为 source -> target
+        # 是联通的。
+        if not blocked:
+            return True
+
+        blocked = set(map(tuple, blocked))
+
+        def bfs(src, dst):
+            que = collections.deque([src])
+            visited = {tuple(src)}
+            k = 0
+            while que and k < 20000:
+                k += 1
+                x, y = que.popleft()
+                for i, j in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
+                    if 0 <= i < 10 ** 6 and 0 <= j < 10 ** 6 and (i, j) not in blocked and (i, j) not in visited:
+                        if [i, j] == dst:
+                            return True
+                        visited.add((i, j))
+                        que.append([i, j])
+            return k >= 20000
+
+        return bfs(source, target) and bfs(target, source)
+
+
+class Solution_934:
+    def shortestBridge(self, A: List[List[int]]) -> int:
+        # 只有两个岛，首先 DFS 找出两个岛屿，然后从其中一个 BFS计算距离,
+        n = len(A)
+        visit = [[0] * n for _ in range(n)]
+
+        def dfs(x, y, island):
+            island.append((x, y))
+            for i, j in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
+                if 0 <= i < n and 0 <= j < n and visit[i][j] == 0 and A[i][j] == 1:
+                    visit[i][j] = 1
+                    dfs(i, j, island)
+
+        lands = []
+        for i in range(n):
+            for j in range(n):
+                if A[i][j] == 1 and visit[i][j] == 0:
+                    visit[i][j] = 1
+                    island = []
+                    dfs(i, j, island)
+                    lands.append(set(island))
+        # print(lands)
+        que = lands[0]
+        other = lands[1]
+        lv = 0
+        while que:
+            next_lv = set()
+            for x, y in que:
+                for i, j in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
+                    if 0 <= i < n and 0 <= j < n:
+                        if (i, j) in other:
+                            return lv
+                        if visit[i][j] == 0 and A[i][j] == 0:
+                            visit[i][j] = 1
+                            next_lv.add((i, j))
+            que = next_lv
+            lv += 1
+        return lv - 1  # 不会从这里返回
 
 
 ######################################################################################################################
